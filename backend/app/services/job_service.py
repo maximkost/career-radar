@@ -1,56 +1,33 @@
+from sqlalchemy.orm import Session
+
+from app.models.jobs import Job
 from app.schemas.job import JobCreate
 
-mock_data = [
-    {
-        "id": 1,
-        "title": "Junior Python Developer",
-        "company": "TechStart",
-        "location": "Tallinn, Estonia",
-        "source": "mock",
-        "description": "Build REST APIs with Python, FastAPI, SQL, and Git.",
-        "posted_date": "2026-06-10",
-    },
-    {
-        "id": 2,
-        "title": "Software Engineer Intern",
-        "company": "DataLab",
-        "location": "Remote",
-        "source": "mock",
-        "description": "Internship for students with Python, PostgreSQL, and Docker basics.",
-        "posted_date": "2026-06-12",
-    },
-]
+
+def get_all_jobs(db: Session):
+    return db.query(Job).all()
 
 
-def get_all_jobs():
-    return mock_data
+def get_job_by_id(db: Session,job_id: int):
+    return db.query(Job).filter(Job.id == job_id).first()
 
 
-def get_job_by_id(job_id: int):
-    for job in mock_data:
-        if job["id"] == job_id:
-            return job
-    return None
+def create_job(db: Session,job: JobCreate):
+    db_job = Job(**job.model_dump())
+
+    db.add(db_job)
+    db.commit()
+    db.refresh(db_job)
+
+    return db_job
 
 
-def create_job(job: JobCreate):
-    new_job = {
-        "id": len(mock_data) + 1,
-        "title": job.title,
-        "company": job.company,
-        "location": job.location,
-        "source": job.source,
-        "description": job.description,
-        "posted_date": job.posted_date,
-    }
+def delete_job(db: Session, job_id: int):
+    job = get_job_by_id(db, job_id)
 
-    mock_data.append(new_job)
-    return new_job
+    if job is None:
+        return False
 
-
-def delete_job(job_id):
-    job = get_job_by_id(job_id)
-    if job is not None:
-        mock_data.remove(job)
-        return True
-    return False
+    db.delete(job)
+    db.commit()
+    return True
